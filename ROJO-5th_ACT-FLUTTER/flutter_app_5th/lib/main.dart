@@ -1,7 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_icons/flutter_icons.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ShoppingCartProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => TodoProvider()),
+        ChangeNotifierProvider(create: (_) => MediaPlayerProvider()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -9,27 +24,192 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'ROJO E-Learning Platform',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
-      ),
-      // Named routes for Home, About, and Contact
-      routes: {
-        '/': (context) => const LoginScreen(),
-        '/home': (context) => const MainNavigationScreen(),
-        '/about': (context) => const AboutScreen(),
-        '/contact': (context) => const ContactScreen(),
-        '/course-details': (context) => const CourseDetailsScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/settings': (context) => const SettingsScreen(),
-        '/enrollment': (context) => const EnrollmentScreen(),
-        '/push-demo': (context) => const PushDemoScreen(),
-        '/replacement-demo': (context) => const ReplacementDemoScreen(),
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return MaterialApp(
+          title: 'ROJO E-Learning Platform',
+          theme: themeProvider.lightTheme,
+          darkTheme: themeProvider.darkTheme,
+          themeMode: themeProvider.themeMode,
+          routes: {
+            '/': (context) => const LoginScreen(),
+            '/home': (context) => const MainNavigationScreen(),
+            '/about': (context) => const AboutScreen(),
+            '/contact': (context) => const ContactScreen(),
+            '/course-details': (context) => const CourseDetailsScreen(),
+            '/profile': (context) => const ProfileScreen(),
+            '/settings': (context) => const SettingsScreen(),
+            '/enrollment': (context) => const EnrollmentScreen(),
+            '/push-demo': (context) => const PushDemoScreen(),
+            '/replacement-demo': (context) => const ReplacementDemoScreen(),
+            '/shopping-cart': (context) => const ShoppingCartScreen(),
+            '/todo-list': (context) => const TodoListScreen(),
+            '/media-gallery': (context) => const MediaGalleryScreen(),
+            '/media-player': (context) => const MediaPlayerScreen(),
+          },
+          initialRoute: '/',
+        );
       },
-      initialRoute: '/',
     );
+  }
+}
+
+// Provider Models
+class ShoppingCartProvider extends ChangeNotifier {
+  final List<CartItem> _items = [];
+
+  List<CartItem> get items => _items;
+  int get itemCount => _items.fold(0, (sum, item) => sum + item.quantity);
+  double get totalPrice => _items.fold(0, (sum, item) => sum + (item.price * item.quantity));
+
+  void addItem(CartItem item) {
+    final existingIndex = _items.indexWhere((i) => i.id == item.id);
+    if (existingIndex >= 0) {
+      _items[existingIndex].quantity++;
+    } else {
+      _items.add(item);
+    }
+    notifyListeners();
+  }
+
+  void removeItem(String id) {
+    _items.removeWhere((item) => item.id == id);
+    notifyListeners();
+  }
+
+  void updateQuantity(String id, int quantity) {
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index >= 0) {
+      if (quantity <= 0) {
+        _items.removeAt(index);
+      } else {
+        _items[index].quantity = quantity;
+      }
+      notifyListeners();
+    }
+  }
+
+  void clearCart() {
+    _items.clear();
+    notifyListeners();
+  }
+}
+
+class CartItem {
+  final String id;
+  final String name;
+  final double price;
+  int quantity;
+
+  CartItem({
+    required this.id,
+    required this.name,
+    required this.price,
+    this.quantity = 1,
+  });
+}
+
+class ThemeProvider extends ChangeNotifier {
+  ThemeMode _themeMode = ThemeMode.light;
+
+  ThemeMode get themeMode => _themeMode;
+
+  ThemeData get lightTheme => ThemeData(
+    colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+    useMaterial3: true,
+    fontFamily: 'Roboto',
+  );
+
+  ThemeData get darkTheme => ThemeData(
+    colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo, brightness: Brightness.dark),
+    useMaterial3: true,
+    fontFamily: 'Roboto',
+  );
+
+  void toggleTheme() {
+    _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
+}
+
+class TodoProvider extends ChangeNotifier {
+  final List<TodoItem> _todos = [];
+
+  List<TodoItem> get todos => _todos;
+  List<TodoItem> get completedTodos => _todos.where((todo) => todo.isCompleted).toList();
+  List<TodoItem> get pendingTodos => _todos.where((todo) => !todo.isCompleted).toList();
+
+  void addTodo(String title) {
+    _todos.add(TodoItem(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title,
+      isCompleted: false,
+    ));
+    notifyListeners();
+  }
+
+  void toggleTodo(String id) {
+    final index = _todos.indexWhere((todo) => todo.id == id);
+    if (index >= 0) {
+      _todos[index].isCompleted = !_todos[index].isCompleted;
+      notifyListeners();
+    }
+  }
+
+  void deleteTodo(String id) {
+    _todos.removeWhere((todo) => todo.id == id);
+    notifyListeners();
+  }
+}
+
+class TodoItem {
+  final String id;
+  final String title;
+  bool isCompleted;
+
+  TodoItem({
+    required this.id,
+    required this.title,
+    required this.isCompleted,
+  });
+}
+
+class MediaPlayerProvider extends ChangeNotifier {
+  AudioPlayer _audioPlayer = AudioPlayer();
+  bool _isPlaying = false;
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
+
+  bool get isPlaying => _isPlaying;
+  Duration get duration => _duration;
+  Duration get position => _position;
+
+  Future<void> playAudio(String url) async {
+    try {
+      await _audioPlayer.play(AssetSource(url));
+      _isPlaying = true;
+      notifyListeners();
+    } catch (e) {
+      print('Error playing audio: $e');
+    }
+  }
+
+  Future<void> pauseAudio() async {
+    await _audioPlayer.pause();
+    _isPlaying = false;
+    notifyListeners();
+  }
+
+  Future<void> stopAudio() async {
+    await _audioPlayer.stop();
+    _isPlaying = false;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
   }
 }
 
@@ -55,7 +235,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _login() {
     if (_formKey.currentState?.validate() ?? false) {
-      // Using pushReplacement to replace login screen
       Navigator.pushReplacementNamed(context, '/home');
     }
   }
@@ -93,12 +272,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 16),
                       Text(
                         'ROJO E-Learning',
-                        style: Theme.of(context).textTheme.headlineMedium,
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Sign in to continue',
-                        style: Theme.of(context).textTheme.bodyLarge,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontFamily: 'Roboto',
+                        ),
                       ),
                       const SizedBox(height: 24),
                       TextFormField(
@@ -185,6 +369,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       appBar: AppBar(
         title: const Text('ROJO E-Learning'),
         actions: [
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              return IconButton(
+                icon: Icon(themeProvider.themeMode == ThemeMode.light 
+                    ? Icons.dark_mode 
+                    : Icons.light_mode),
+                onPressed: () => themeProvider.toggleTheme(),
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.notifications),
             onPressed: () {
@@ -290,6 +484,39 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           ),
           const Divider(),
           ListTile(
+            leading: const Icon(Icons.shopping_cart),
+            title: const Text('Shopping Cart'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/shopping-cart');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.checklist),
+            title: const Text('Todo List'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/todo-list');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library),
+            title: const Text('Media Gallery'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/media-gallery');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.play_circle),
+            title: const Text('Media Player'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, '/media-player');
+            },
+          ),
+          const Divider(),
+          ListTile(
             leading: const Icon(Icons.info),
             title: const Text('About'),
             onTap: () {
@@ -377,10 +604,18 @@ class OverviewTab extends StatelessWidget {
                 children: [
                   Text(
                     'Welcome back!',
-                    style: Theme.of(context).textTheme.headlineSmall,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  const Text('Continue your learning journey'),
+                  Text(
+                    'Continue your learning journey',
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      fontFamily: 'Roboto',
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   Row(
                     children: [
@@ -408,7 +643,10 @@ class OverviewTab extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             'Recent Activity',
-            style: Theme.of(context).textTheme.titleLarge,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 8),
           ListView(
@@ -453,7 +691,10 @@ class ProgressTab extends StatelessWidget {
                 children: [
                   Text(
                     'Learning Progress',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   LinearProgressIndicator(
@@ -464,7 +705,12 @@ class ProgressTab extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text('70% Complete'),
+                  Text(
+                    '70% Complete',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontFamily: 'Roboto',
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -513,7 +759,10 @@ class ScheduleTab extends StatelessWidget {
                 children: [
                   Text(
                     'Today\'s Schedule',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   _buildScheduleItem('Flutter Workshop', '10:00 AM - 12:00 PM', Colors.blue),
@@ -567,7 +816,10 @@ class CoursesTab extends StatelessWidget {
         children: [
           Text(
             'My Courses',
-            style: Theme.of(context).textTheme.headlineSmall,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -656,19 +908,34 @@ class ProfileTab extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  const CircleAvatar(
-                    radius: 40,
-                    backgroundColor: Colors.indigo,
-                    child: Icon(Icons.person, size: 40, color: Colors.white),
+                  // Profile Card with Image, Custom Icon, and Styled Text
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 3,
+                      ),
+                    ),
+                    child: const CircleAvatar(
+                      radius: 40,
+                      backgroundColor: Colors.indigo,
+                      child: Icon(Icons.person, size: 40, color: Colors.white),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'Meg Ryan Rojo',
-                    style: Theme.of(context).textTheme.headlineSmall,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontFamily: 'Poppins',
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     'student@rojo.edu',
-                    style: Theme.of(context).textTheme.bodyMedium,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontFamily: 'Roboto',
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
@@ -719,6 +986,604 @@ class ProfileTab extends StatelessWidget {
         Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
         Text(label, style: const TextStyle(fontSize: 12)),
       ],
+    );
+  }
+}
+
+// Shopping Cart Screen
+class ShoppingCartScreen extends StatelessWidget {
+  const ShoppingCartScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Shopping Cart'),
+        actions: [
+          Consumer<ShoppingCartProvider>(
+            builder: (context, cartProvider, child) {
+              return Text('${cartProvider.itemCount} items');
+            },
+          ),
+        ],
+      ),
+      body: Consumer<ShoppingCartProvider>(
+        builder: (context, cartProvider, child) {
+          if (cartProvider.items.isEmpty) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.shopping_cart, size: 64, color: Colors.grey),
+                  SizedBox(height: 16),
+                  Text('Your cart is empty'),
+                ],
+              ),
+            );
+          }
+
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  itemCount: cartProvider.items.length,
+                  itemBuilder: (context, index) {
+                    final item = cartProvider.items[index];
+                    return Card(
+                      child: ListTile(
+                        title: Text(item.name),
+                        subtitle: Text('\$${item.price.toStringAsFixed(2)}'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.remove),
+                              onPressed: () => cartProvider.updateQuantity(item.id, item.quantity - 1),
+                            ),
+                            Text('${item.quantity}'),
+                            IconButton(
+                              icon: const Icon(Icons.add),
+                              onPressed: () => cartProvider.updateQuantity(item.id, item.quantity + 1),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete),
+                              onPressed: () => cartProvider.removeItem(item.id),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total: \$${cartProvider.totalPrice.toStringAsFixed(2)}',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        ElevatedButton(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Order placed successfully!')),
+                            );
+                            cartProvider.clearCart();
+                          },
+                          child: const Text('Checkout'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () => _showAddItemDialog(context),
+                        child: const Text('Add Item'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAddItemDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    final priceController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add Item'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Item Name'),
+            ),
+            TextField(
+              controller: priceController,
+              decoration: const InputDecoration(labelText: 'Price'),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              final name = nameController.text;
+              final price = double.tryParse(priceController.text) ?? 0.0;
+              if (name.isNotEmpty && price > 0) {
+                context.read<ShoppingCartProvider>().addItem(
+                  CartItem(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    name: name,
+                    price: price,
+                  ),
+                );
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Todo List Screen
+class TodoListScreen extends StatefulWidget {
+  const TodoListScreen({super.key});
+
+  @override
+  State<TodoListScreen> createState() => _TodoListScreenState();
+}
+
+class _TodoListScreenState extends State<TodoListScreen> {
+  final _todoController = TextEditingController();
+
+  @override
+  void dispose() {
+    _todoController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Todo List'),
+        actions: [
+          Consumer<TodoProvider>(
+            builder: (context, todoProvider, child) {
+              return Text('${todoProvider.pendingTodos.length} pending');
+            },
+          ),
+        ],
+      ),
+      body: Consumer<TodoProvider>(
+        builder: (context, todoProvider, child) {
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _todoController,
+                        decoration: const InputDecoration(
+                          hintText: 'Add a new todo',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (_todoController.text.isNotEmpty) {
+                          todoProvider.addTodo(_todoController.text);
+                          _todoController.clear();
+                        }
+                      },
+                      child: const Text('Add'),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: todoProvider.todos.length,
+                  itemBuilder: (context, index) {
+                    final todo = todoProvider.todos[index];
+                    return Card(
+                      child: ListTile(
+                        leading: Checkbox(
+                          value: todo.isCompleted,
+                          onChanged: (_) => todoProvider.toggleTodo(todo.id),
+                        ),
+                        title: Text(
+                          todo.title,
+                          style: TextStyle(
+                            decoration: todo.isCompleted 
+                                ? TextDecoration.lineThrough 
+                                : TextDecoration.none,
+                          ),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete),
+                          onPressed: () => todoProvider.deleteTodo(todo.id),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+// Media Gallery Screen
+class MediaGalleryScreen extends StatelessWidget {
+  const MediaGalleryScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Media Gallery'),
+      ),
+      body: DefaultTabController(
+        length: 3,
+        child: Column(
+          children: [
+            const TabBar(
+              tabs: [
+                Tab(icon: Icon(Icons.image), text: 'Images'),
+                Tab(icon: Icon(Icons.video_library), text: 'Videos'),
+                Tab(icon: Icon(Icons.audiotrack), text: 'Audio'),
+              ],
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _buildImageGallery(),
+                  _buildVideoGallery(),
+                  _buildAudioGallery(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageGallery() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Image Gallery',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemCount: 6,
+              itemBuilder: (context, index) {
+                return Card(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 2,
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: Image.network(
+                              'https://picsum.photos/200/200?random=$index',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(Icons.image, size: 50);
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Text('Image ${index + 1}'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVideoGallery() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Video Gallery',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView(
+              children: [
+                _buildVideoCard('Sample Video 1', 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4'),
+                _buildVideoCard('Sample Video 2', 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_2mb.mp4'),
+                _buildVideoCard('Sample Video 3', 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_5mb.mp4'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVideoCard(String title, String videoUrl) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.play_circle_filled, size: 40),
+        title: Text(title),
+        subtitle: const Text('Tap to play video'),
+        trailing: const Icon(Icons.arrow_forward_ios),
+        onTap: () {
+          // Navigate to video player
+        },
+      ),
+    );
+  }
+
+  Widget _buildAudioGallery() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Audio Gallery',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView(
+              children: [
+                _buildAudioCard('Sample Audio 1', 'audio/sample1.mp3'),
+                _buildAudioCard('Sample Audio 2', 'audio/sample2.mp3'),
+                _buildAudioCard('Sample Audio 3', 'audio/sample3.mp3'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAudioCard(String title, String audioPath) {
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.audiotrack, size: 40),
+        title: Text(title),
+        subtitle: const Text('Tap to play audio'),
+        trailing: const Icon(Icons.play_arrow),
+        onTap: () {
+          // Play audio
+        },
+      ),
+    );
+  }
+}
+
+// Media Player Screen
+class MediaPlayerScreen extends StatefulWidget {
+  const MediaPlayerScreen({super.key});
+
+  @override
+  State<MediaPlayerScreen> createState() => _MediaPlayerScreenState();
+}
+
+class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
+  VideoPlayerController? _videoController;
+  ChewieController? _chewieController;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideoPlayer();
+  }
+
+  void _initializeVideoPlayer() {
+    _videoController = VideoPlayerController.networkUrl(
+      Uri.parse('https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4'),
+    );
+    _chewieController = ChewieController(
+      videoPlayerController: _videoController!,
+      autoPlay: false,
+      looping: false,
+    );
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    _chewieController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Media Player'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            // Video Player
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Video Player',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_chewieController != null)
+                      SizedBox(
+                        height: 200,
+                        child: Chewie(controller: _chewieController!),
+                      )
+                    else
+                      const SizedBox(
+                        height: 200,
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Audio Player
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Audio Player',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Consumer<MediaPlayerProvider>(
+                      builder: (context, mediaProvider, child) {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.play_arrow, size: 40),
+                              onPressed: () => mediaProvider.playAudio('audio/sample1.mp3'),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.pause, size: 40),
+                              onPressed: () => mediaProvider.pauseAudio(),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.stop, size: 40),
+                              onPressed: () => mediaProvider.stopAudio(),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Material Icons Demo
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Dynamic Material Icons',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        Icon(
+                          Icons.favorite,
+                          color: Colors.red,
+                          size: 30,
+                        ),
+                        Icon(
+                          Icons.star,
+                          color: Colors.amber,
+                          size: 40,
+                        ),
+                        Icon(
+                          Icons.home,
+                          color: Colors.blue,
+                          size: 50,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
