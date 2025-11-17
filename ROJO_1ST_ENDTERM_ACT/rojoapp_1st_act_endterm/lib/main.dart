@@ -2561,7 +2561,9 @@ class _TeamPageState extends State<TeamPage> {
             Text(member['email']!),
             Text(member['phone']!),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              spacing: 8.0,
+              runSpacing: 4.0,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -2574,7 +2576,6 @@ class _TeamPageState extends State<TeamPage> {
                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ),
-                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
@@ -2590,18 +2591,25 @@ class _TeamPageState extends State<TeamPage> {
             ),
           ],
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.message),
-              onPressed: () => _sendMessage(member),
-            ),
-            IconButton(
-              icon: const Icon(Icons.phone),
-              onPressed: () => _callMember(member),
-            ),
-          ],
+        trailing: SizedBox(
+          width: 100,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.message),
+                onPressed: () => _sendMessage(member),
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                padding: EdgeInsets.zero,
+              ),
+              IconButton(
+                icon: const Icon(Icons.phone),
+                onPressed: () => _callMember(member),
+                constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                padding: EdgeInsets.zero,
+              ),
+            ],
+          ),
         ),
       ),
     );

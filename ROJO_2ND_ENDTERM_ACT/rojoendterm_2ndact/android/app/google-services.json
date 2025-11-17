@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "271769308304",
+    "project_id": "ndendtermact",
+    "storage_bucket": "ndendtermact.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:271769308304:android:60ad8ec40c6fe55dd61c15",
+        "android_client_info": {
+          "package_name": "com.example.rojoendterm_2ndact"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "271769308304-na3pcbc4aqfcfkkebuhlpgpdjdun7itd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDZraKcELaHyxFHpf7B8XPsLI5TbZgc-TQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "271769308304-na3pcbc4aqfcfkkebuhlpgpdjdun7itd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:271769308304:android:d9affa7c188e1a1dd61c15",
+        "android_client_info": {
+          "package_name": "com.rojo.endterm2"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "271769308304-na3pcbc4aqfcfkkebuhlpgpdjdun7itd.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDZraKcELaHyxFHpf7B8XPsLI5TbZgc-TQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "271769308304-na3pcbc4aqfcfkkebuhlpgpdjdun7itd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
