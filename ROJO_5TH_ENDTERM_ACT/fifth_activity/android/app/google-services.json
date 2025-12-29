@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "350355329790",
+    "project_id": "fifthendtermact",
+    "storage_bucket": "fifthendtermact.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:350355329790:android:eb8b015d524a68e18b0baf",
+        "android_client_info": {
+          "package_name": "com.example.fifth_activity"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCM7hXoXFzrl9BOzTkh2sSeaxfnCLnOgOs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
